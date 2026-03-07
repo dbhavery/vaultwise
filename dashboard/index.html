@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vaultwise</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #21262d;
+  --bg-card: #1c2128;
+  --border: #30363d;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+  --accent: #58a6ff;
+  --accent-hover: #79c0ff;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --red: #f85149;
+  --purple: #bc8cff;
+  --radius: 8px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Layout */
+.app { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 240px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  padding: 20px 0;
+  flex-shrink: 0;
+  position: fixed;
+  top: 0; bottom: 0; left: 0;
+  overflow-y: auto;
+  z-index: 100;
+}
+.main { margin-left: 240px; flex: 1; padding: 24px 32px; min-width: 0; }
+
+/* Sidebar */
+.logo { padding: 0 20px 20px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+.logo h1 { font-size: 20px; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
+.logo small { font-size: 11px; color: var(--text-muted); }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 20px; cursor: pointer;
+  color: var(--text-secondary); font-size: 14px; font-weight: 500;
+  transition: all 0.15s;
+  border-left: 3px solid transparent;
+}
+.nav-item:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+.nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(88,166,255,0.08); }
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+/* Page header */
+.page-header { margin-bottom: 24px; }
+.page-header h2 { font-size: 24px; font-weight: 600; }
+.page-header p { color: var(--text-secondary); font-size: 14px; margin-top: 4px; }
+
+/* Cards */
+.stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+.stat-card .label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px; }
+.stat-card .value { font-size: 28px; font-weight: 700; }
+.stat-card .value.blue { color: var(--accent); }
+.stat-card .value.green { color: var(--green); }
+.stat-card .value.yellow { color: var(--yellow); }
+.stat-card .value.purple { color: var(--purple); }
+
+/* Panels */
+.panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+.panel-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.panel-header h3 { font-size: 16px; font-weight: 600; }
+.panel-body { padding: 20px; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 10px 16px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--text-secondary); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 6px;
+  font-size: 13px; font-weight: 500;
+  cursor: pointer; border: 1px solid var(--border);
+  background: var(--bg-tertiary); color: var(--text-primary);
+  transition: all 0.15s;
+}
+.btn:hover { border-color: var(--text-muted); }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-green { background: rgba(63,185,80,0.15); color: var(--green); border-color: rgba(63,185,80,0.3); }
+.btn-red { background: rgba(248,81,73,0.15); color: var(--red); border-color: rgba(248,81,73,0.3); }
+
+/* Inputs */
+input[type="text"], textarea, select {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+input[type="text"]:focus, textarea:focus { outline: none; border-color: var(--accent); }
+textarea { resize: vertical; min-height: 120px; }
+
+/* Badge */
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 12px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+}
+.badge-green { background: rgba(63,185,80,0.15); color: var(--green); }
+.badge-yellow { background: rgba(210,153,34,0.15); color: var(--yellow); }
+.badge-blue { background: rgba(88,166,255,0.15); color: var(--accent); }
+.badge-red { background: rgba(248,81,73,0.15); color: var(--red); }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6); z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal {
+  background: var(--bg-secondary); border: 1px solid var(--border);
+  border-radius: var(--radius); width: 560px; max-width: 90vw;
+  max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.modal-header {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-header h3 { font-size: 16px; font-weight: 600; }
+.modal-close { cursor: pointer; color: var(--text-muted); font-size: 20px; background: none; border: none; padding: 4px 8px; }
+.modal-close:hover { color: var(--text-primary); }
+.modal-body { padding: 20px; }
+.modal-body .field { margin-bottom: 16px; }
+.modal-body .field label { display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+.modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Chat */
+.chat-container { max-width: 800px; }
+.chat-messages { min-height: 200px; max-height: 500px; overflow-y: auto; margin-bottom: 16px; }
+.chat-msg { margin-bottom: 16px; padding: 14px 18px; border-radius: var(--radius); }
+.chat-msg.user { background: rgba(88,166,255,0.08); border: 1px solid rgba(88,166,255,0.2); margin-left: 40px; }
+.chat-msg.assistant { background: var(--bg-tertiary); border: 1px solid var(--border); margin-right: 40px; }
+.chat-msg .msg-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+.chat-msg .msg-text { font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
+.chat-msg .sources { margin-top: 10px; font-size: 12px; color: var(--text-muted); }
+.chat-msg .sources a { color: var(--accent); text-decoration: none; }
+.chat-msg .confidence { margin-top: 6px; font-size: 12px; }
+.chat-input-row { display: flex; gap: 8px; }
+.chat-input-row input { flex: 1; }
+
+/* Search results */
+.search-result { padding: 16px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; background: var(--bg-tertiary); }
+.search-result .sr-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.search-result .sr-title { font-weight: 600; font-size: 14px; color: var(--accent); }
+.search-result .sr-score { font-size: 12px; color: var(--text-muted); }
+.search-result .sr-content { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+/* Chart */
+.chart-container { width: 100%; height: 200px; display: flex; align-items: flex-end; gap: 8px; padding: 10px 0; }
+.chart-bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.chart-bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.3s; }
+.chart-label { font-size: 10px; color: var(--text-muted); }
+.chart-value { font-size: 11px; color: var(--text-secondary); font-weight: 600; }
+
+/* Quiz */
+.quiz-question { margin-bottom: 24px; }
+.quiz-question h4 { font-size: 15px; margin-bottom: 12px; }
+.quiz-option {
+  display: block; width: 100%; text-align: left;
+  padding: 10px 14px; margin-bottom: 6px; border-radius: 6px;
+  background: var(--bg-primary); border: 1px solid var(--border);
+  color: var(--text-primary); cursor: pointer; font-size: 14px;
+  transition: all 0.15s;
+}
+.quiz-option:hover { border-color: var(--accent); }
+.quiz-option.correct { border-color: var(--green); background: rgba(63,185,80,0.1); }
+.quiz-option.wrong { border-color: var(--red); background: rgba(248,81,73,0.1); }
+.quiz-option.disabled { pointer-events: none; opacity: 0.7; }
+.quiz-explanation { margin-top: 8px; padding: 10px 14px; background: rgba(88,166,255,0.05); border-radius: 6px; font-size: 13px; color: var(--text-secondary); display: none; }
+.quiz-explanation.show { display: block; }
+
+/* Utilities */
+.hidden { display: none !important; }
+.mb-16 { margin-bottom: 16px; }
+.flex { display: flex; }
+.gap-8 { gap: 8px; }
+.text-right { text-align: right; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; }
+.loading { text-align: center; padding: 40px; color: var(--text-muted); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar { width: 60px; }
+  .sidebar .logo small, .sidebar .nav-label { display: none; }
+  .sidebar .logo h1 { font-size: 14px; }
+  .main { margin-left: 60px; padding: 16px; }
+  .stat-cards { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="logo">
+      <h1>Vaultwise</h1>
+      <small>Knowledge Management</small>
+    </div>
+    <div class="nav-item active" data-page="overview" onclick="navigate('overview')">
+      <span class="nav-icon">&#9632;</span><span class="nav-label">Overview</span>
+    </div>
+    <div class="nav-item" data-page="documents" onclick="navigate('documents')">
+      <span class="nav-icon">&#9776;</span><span class="nav-label">Documents</span>
+    </div>
+    <div class="nav-item" data-page="ask" onclick="navigate('ask')">
+      <span class="nav-icon">&#10067;</span><span class="nav-label">Ask</span>
+    </div>
+    <div class="nav-item" data-page="search" onclick="navigate('search')">
+      <span class="nav-icon">&#128269;</span><span class="nav-label">Search</span>
+    </div>
+    <div class="nav-item" data-page="training" onclick="navigate('training')">
+      <span class="nav-icon">&#9998;</span><span class="nav-label">Training</span>
+    </div>
+    <div class="nav-item" data-page="analytics" onclick="navigate('analytics')">
+      <span class="nav-icon">&#128200;</span><span class="nav-label">Analytics</span>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <div class="main">
+    <!-- OVERVIEW PAGE -->
+    <div id="page-overview" class="page">
+      <div class="page-header">
+        <h2>Overview</h2>
+        <p>Knowledge base health and activity at a glance</p>
+      </div>
+      <div class="stat-cards" id="overview-stats"></div>
+      <div class="panel">
+        <div class="panel-header"><h3>Queries Per Day (Last 7 Days)</h3></div>
+        <div class="panel-body"><div id="usage-chart" class="chart-container"></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><h3>Recent Questions</h3></div>
+        <div class="panel-body"><table><thead><tr><th>Question</th><th>Confidence</th><th>Date</th></tr></thead><tbody id="recent-questions"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- DOCUMENTS PAGE -->
+    <div id="page-documents" class="page hidden">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div><h2>Documents</h2><p>Manage your knowledge base documents</p></div>
+        <button class="btn btn-primary" onclick="showUploadModal()">+ Upload Document</button>
+      </div>
+      <div class="panel">
+        <div class="panel-body"><table><thead><tr><th>Title</th><th>Type</th><th>Words</th><th>Source</th><th>Created</th><th></th></tr></thead><tbody id="doc-list"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- DOCUMENT DETAIL (shown in-place) -->
+    <div id="page-doc-detail" class="page hidden">
+      <div class="page-header">
+        <p><a href="#" onclick="navigate('documents');return false;" style="color:var(--accent);text-decoration:none;">&larr; Back to Documents</a></p>
+        <h2 id="doc-detail-title"></h2>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><h3>Content</h3></div>
+        <div class="panel-body"><pre id="doc-detail-content" style="white-space:pre-wrap;font-size:14px;line-height:1.7;color:var(--text-secondary);"></pre></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><h3>Chunks</h3></div>
+        <div class="panel-body"><div id="doc-detail-chunks"></div></div>
+      </div>
+    </div>
+
+    <!-- ASK PAGE -->
+    <div id="page-ask" class="page hidden">
+      <div class="page-header">
+        <h2>Ask a Question</h2>
+        <p>Get AI-powered answers from your knowledge base</p>
+      </div>
+      <div class="chat-container">
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" id="ask-input" placeholder="Type your question..." onkeydown="if(event.key==='Enter')askQuestion()">
+          <button class="btn btn-primary" onclick="askQuestion()">Ask</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEARCH PAGE -->
+    <div id="page-search" class="page hidden">
+      <div class="page-header">
+        <h2>Search</h2>
+        <p>Search across all documents using semantic similarity</p>
+      </div>
+      <div class="chat-input-row mb-16">
+        <input type="text" id="search-input" placeholder="Search the knowledge base..." onkeydown="if(event.key==='Enter')doSearch()">
+        <button class="btn btn-primary" onclick="doSearch()">Search</button>
+      </div>
+      <div id="search-results"></div>
+    </div>
+
+    <!-- TRAINING PAGE -->
+    <div id="page-training" class="page hidden">
+      <div class="page-header">
+        <h2>Training Materials</h2>
+        <p>Auto-generated articles and quizzes from your knowledge base</p>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Articles</h3>
+          <button class="btn btn-sm" onclick="showGenerateArticleModal()">+ Generate Article</button>
+        </div>
+        <div class="panel-body"><table><thead><tr><th>Title</th><th>Status</th><th>Created</th><th></th></tr></thead><tbody id="article-list"></tbody></table></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><h3>Quizzes</h3></div>
+        <div class="panel-body"><table><thead><tr><th>Title</th><th>Created</th><th></th></tr></thead><tbody id="quiz-list"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ARTICLE DETAIL -->
+    <div id="page-article-detail" class="page hidden">
+      <div class="page-header">
+        <p><a href="#" onclick="navigate('training');return false;" style="color:var(--accent);text-decoration:none;">&larr; Back to Training</a></p>
+        <h2 id="article-detail-title"></h2>
+        <div id="article-detail-status" style="margin-top:8px;"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-body"><pre id="article-detail-content" style="white-space:pre-wrap;font-size:14px;line-height:1.7;color:var(--text-secondary);"></pre></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-green btn-sm" onclick="updateArticleStatus(currentArticleId,'published')">Publish</button>
+        <button class="btn btn-sm" onclick="updateArticleStatus(currentArticleId,'archived')">Archive</button>
+        <button class="btn btn-sm" onclick="genQuizFromArticle(currentArticleId)">Generate Quiz</button>
+      </div>
+    </div>
+
+    <!-- QUIZ DETAIL -->
+    <div id="page-quiz-detail" class="page hidden">
+      <div class="page-header">
+        <p><a href="#" onclick="navigate('training');return false;" style="color:var(--accent);text-decoration:none;">&larr; Back to Training</a></p>
+        <h2 id="quiz-detail-title"></h2>
+      </div>
+      <div id="quiz-questions-container"></div>
+      <div id="quiz-score" class="panel hidden" style="margin-top:16px;">
+        <div class="panel-body" style="text-align:center;">
+          <h3 id="quiz-score-text"></h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS PAGE -->
+    <div id="page-analytics" class="page hidden">
+      <div class="page-header">
+        <h2>Analytics</h2>
+        <p>Knowledge gaps and usage trends</p>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><h3>Knowledge Gaps</h3></div>
+        <div class="panel-body"><table><thead><tr><th>Topic</th><th>Frequency</th><th>Status</th><th>Last Asked</th><th>Actions</th></tr></thead><tbody id="gaps-list"></tbody></table></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><h3>Usage Trends (Last 7 Days)</h3></div>
+        <div class="panel-body"><div id="analytics-chart" class="chart-container"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Modal -->
+<div id="upload-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeModal('upload-modal')">
+  <div class="modal">
+    <div class="modal-header"><h3>Upload Document</h3><button class="modal-close" onclick="closeModal('upload-modal')">&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Title</label><input type="text" id="upload-title" placeholder="Document title"></div>
+      <div class="field"><label>Content</label><textarea id="upload-content" placeholder="Paste document content here..." rows="10"></textarea></div>
+      <div class="field"><label>Type</label>
+        <select id="upload-type"><option value="text">Text</option><option value="markdown">Markdown</option><option value="python">Python</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('upload-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="uploadDocument()">Upload</button>
+    </div>
+  </div>
+</div>
+
+<!-- Generate Article Modal -->
+<div id="gen-article-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeModal('gen-article-modal')">
+  <div class="modal">
+    <div class="modal-header"><h3>Generate Article</h3><button class="modal-close" onclick="closeModal('gen-article-modal')">&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Select source documents:</label><div id="gen-article-docs"></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('gen-article-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="generateArticle()">Generate</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+let currentArticleId = null;
+let quizState = {};
+
+// ---- Navigation ----
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const el = document.getElementById('page-' + page);
+  if (el) el.classList.remove('hidden');
+  const nav = document.querySelector(`.nav-item[data-page="${page}"]`);
+  if (nav) nav.classList.add('active');
+  // Load data for the page
+  if (page === 'overview') loadOverview();
+  else if (page === 'documents') loadDocuments();
+  else if (page === 'training') loadTraining();
+  else if (page === 'analytics') loadAnalytics();
+}
+
+// ---- API helpers ----
+async function api(path, options = {}) {
+  const url = API + path;
+  const res = await fetch(url, {
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+    ...options,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || 'Request failed');
+  }
+  return res.json();
+}
+
+function formatDate(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function shortDate(iso) {
+  if (!iso) return '-';
+  return iso.substring(5, 10);
+}
+
+function statusBadge(status) {
+  const cls = status === 'published' ? 'badge-green' : status === 'draft' ? 'badge-yellow' : status === 'open' ? 'badge-red' : 'badge-blue';
+  return `<span class="badge ${cls}">${status}</span>`;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ---- Overview ----
+async function loadOverview() {
+  try {
+    const [stats, usage, questions] = await Promise.all([
+      api('/api/analytics/overview'),
+      api('/api/analytics/usage?days=7'),
+      api('/api/questions?limit=10'),
+    ]);
+    // Stat cards
+    document.getElementById('overview-stats').innerHTML = `
+      <div class="stat-card"><div class="label">Documents</div><div class="value blue">${stats.total_docs}</div></div>
+      <div class="stat-card"><div class="label">Questions Asked</div><div class="value green">${stats.total_questions}</div></div>
+      <div class="stat-card"><div class="label">Knowledge Gaps</div><div class="value yellow">${stats.gaps_count}</div></div>
+      <div class="stat-card"><div class="label">Avg Confidence</div><div class="value purple">${(stats.avg_confidence * 100).toFixed(0)}%</div></div>
+    `;
+    // Chart
+    renderChart('usage-chart', usage.queries_per_day);
+    // Recent questions
+    const tbody = document.getElementById('recent-questions');
+    if (questions.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">No questions yet</td></tr>';
+    } else {
+      tbody.innerHTML = questions.map(q => `
+        <tr>
+          <td>${escapeHtml(q.query)}</td>
+          <td>${(q.confidence * 100).toFixed(0)}%</td>
+          <td>${formatDate(q.created_at)}</td>
+        </tr>
+      `).join('');
+    }
+  } catch (e) { console.error('Failed to load overview:', e); }
+}
+
+function renderChart(containerId, data) {
+  const container = document.getElementById(containerId);
+  if (!data || data.length === 0) { container.innerHTML = '<p style="color:var(--text-muted)">No data</p>'; return; }
+  const maxVal = Math.max(...data.map(d => d.count), 1);
+  container.innerHTML = data.map(d => {
+    const height = Math.max((d.count / maxVal) * 160, 4);
+    return `<div class="chart-bar-wrapper">
+      <div class="chart-value">${d.count}</div>
+      <div class="chart-bar" style="height:${height}px"></div>
+      <div class="chart-label">${shortDate(d.date)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ---- Documents ----
+async function loadDocuments() {
+  try {
+    const data = await api('/api/documents?limit=100');
+    const tbody = document.getElementById('doc-list');
+    if (data.documents.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No documents yet</td></tr>';
+    } else {
+      tbody.innerHTML = data.documents.map(d => `
+        <tr style="cursor:pointer" onclick="viewDocument('${d.id}')">
+          <td style="color:var(--text-primary);font-weight:500;">${escapeHtml(d.title)}</td>
+          <td>${statusBadge(d.doc_type)}</td>
+          <td>${d.word_count.toLocaleString()}</td>
+          <td>${d.source}</td>
+          <td>${formatDate(d.created_at)}</td>
+          <td><button class="btn btn-red btn-sm" onclick="event.stopPropagation();deleteDoc('${d.id}')">Delete</button></td>
+        </tr>
+      `).join('');
+    }
+  } catch (e) { console.error('Failed to load documents:', e); }
+}
+
+async function viewDocument(id) {
+  try {
+    const doc = await api('/api/documents/' + id);
+    document.getElementById('doc-detail-title').textContent = doc.title;
+    document.getElementById('doc-detail-content').textContent = doc.content;
+    const chunksDiv = document.getElementById('doc-detail-chunks');
+    if (doc.chunks && doc.chunks.length > 0) {
+      chunksDiv.innerHTML = doc.chunks.map((c, i) =>
+        `<div class="search-result"><div class="sr-header"><span class="sr-title">Chunk ${i + 1}</span></div><div class="sr-content">${escapeHtml(c.content.substring(0, 300))}${c.content.length > 300 ? '...' : ''}</div></div>`
+      ).join('');
+    } else {
+      chunksDiv.innerHTML = '<p style="color:var(--text-muted)">No chunks</p>';
+    }
+    document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+    document.getElementById('page-doc-detail').classList.remove('hidden');
+  } catch (e) { console.error('Failed to load document:', e); }
+}
+
+async function deleteDoc(id) {
+  if (!confirm('Delete this document?')) return;
+  try {
+    await api('/api/documents/' + id, { method: 'DELETE' });
+    loadDocuments();
+  } catch (e) { alert('Failed to delete: ' + e.message); }
+}
+
+function showUploadModal() { document.getElementById('upload-modal').classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+async function uploadDocument() {
+  const title = document.getElementById('upload-title').value.trim();
+  const content = document.getElementById('upload-content').value.trim();
+  const docType = document.getElementById('upload-type').value;
+  if (!title || !content) { alert('Title and content are required'); return; }
+  try {
+    await api('/api/documents/json', {
+      method: 'POST',
+      body: JSON.stringify({ title, content, doc_type: docType, source: 'upload' }),
+    });
+    closeModal('upload-modal');
+    document.getElementById('upload-title').value = '';
+    document.getElementById('upload-content').value = '';
+    loadDocuments();
+  } catch (e) { alert('Upload failed: ' + e.message); }
+}
+
+// ---- Ask ----
+async function askQuestion() {
+  const input = document.getElementById('ask-input');
+  const query = input.value.trim();
+  if (!query) return;
+  input.value = '';
+  const messagesDiv = document.getElementById('chat-messages');
+  // Add user message
+  messagesDiv.innerHTML += `<div class="chat-msg user"><div class="msg-label">You</div><div class="msg-text">${escapeHtml(query)}</div></div>`;
+  messagesDiv.innerHTML += `<div class="chat-msg assistant" id="loading-msg"><div class="msg-label">Vaultwise</div><div class="msg-text" style="color:var(--text-muted)">Thinking...</div></div>`;
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  try {
+    const data = await api('/api/ask', { method: 'POST', body: JSON.stringify({ query }) });
+    const loadingEl = document.getElementById('loading-msg');
+    if (loadingEl) loadingEl.remove();
+    let sourcesHtml = '';
+    if (data.sources && data.sources.length > 0) {
+      sourcesHtml = '<div class="sources">Sources: ' + data.sources.map(s => `<a href="#" onclick="viewDocument(\'${s.doc_id}\');return false;">${escapeHtml(s.title)}</a>`).join(', ') + '</div>';
+    }
+    const confColor = data.confidence >= 0.7 ? 'var(--green)' : data.confidence >= 0.4 ? 'var(--yellow)' : 'var(--red)';
+    messagesDiv.innerHTML += `<div class="chat-msg assistant">
+      <div class="msg-label">Vaultwise</div>
+      <div class="msg-text">${escapeHtml(data.answer)}</div>
+      ${sourcesHtml}
+      <div class="confidence" style="color:${confColor}">Confidence: ${(data.confidence * 100).toFixed(0)}%</div>
+    </div>`;
+  } catch (e) {
+    const loadingEl = document.getElementById('loading-msg');
+    if (loadingEl) loadingEl.remove();
+    messagesDiv.innerHTML += `<div class="chat-msg assistant"><div class="msg-label">Error</div><div class="msg-text" style="color:var(--red)">${escapeHtml(e.message)}</div></div>`;
+  }
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// ---- Search ----
+async function doSearch() {
+  const query = document.getElementById('search-input').value.trim();
+  if (!query) return;
+  const resultsDiv = document.getElementById('search-results');
+  resultsDiv.innerHTML = '<div class="loading">Searching...</div>';
+  try {
+    const data = await api('/api/search', { method: 'POST', body: JSON.stringify({ query, limit: 10 }) });
+    if (data.results.length === 0) {
+      resultsDiv.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">No results found</p>';
+    } else {
+      resultsDiv.innerHTML = data.results.map(r => `
+        <div class="search-result">
+          <div class="sr-header">
+            <span class="sr-title" style="cursor:pointer" onclick="viewDocument('${r.doc_id}')">${escapeHtml(r.doc_title)}</span>
+            <span class="sr-score">Score: ${(r.score * 100).toFixed(1)}%</span>
+          </div>
+          <div class="sr-content">${escapeHtml(r.content.substring(0, 400))}${r.content.length > 400 ? '...' : ''}</div>
+        </div>
+      `).join('');
+    }
+  } catch (e) { resultsDiv.innerHTML = `<p style="color:var(--red)">${escapeHtml(e.message)}</p>`; }
+}
+
+// ---- Training ----
+async function loadTraining() {
+  try {
+    const [articles, quizzes] = await Promise.all([api('/api/articles'), api('/api/quizzes')]);
+    const artBody = document.getElementById('article-list');
+    if (articles.length === 0) {
+      artBody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No articles yet</td></tr>';
+    } else {
+      artBody.innerHTML = articles.map(a => `
+        <tr>
+          <td style="cursor:pointer;color:var(--accent);" onclick="viewArticle('${a.id}')">${escapeHtml(a.title)}</td>
+          <td>${statusBadge(a.status)}</td>
+          <td>${formatDate(a.created_at)}</td>
+          <td><button class="btn btn-sm" onclick="genQuizFromArticle('${a.id}')">Quiz</button></td>
+        </tr>
+      `).join('');
+    }
+    const quizBody = document.getElementById('quiz-list');
+    if (quizzes.length === 0) {
+      quizBody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">No quizzes yet</td></tr>';
+    } else {
+      quizBody.innerHTML = quizzes.map(q => `
+        <tr>
+          <td>${escapeHtml(q.title)}</td>
+          <td>${formatDate(q.created_at)}</td>
+          <td><button class="btn btn-primary btn-sm" onclick="takeQuiz('${q.id}')">Take Quiz</button></td>
+        </tr>
+      `).join('');
+    }
+  } catch (e) { console.error('Failed to load training:', e); }
+}
+
+async function viewArticle(id) {
+  try {
+    const art = await api('/api/articles/' + id);
+    currentArticleId = id;
+    document.getElementById('article-detail-title').textContent = art.title;
+    document.getElementById('article-detail-content').textContent = art.content;
+    document.getElementById('article-detail-status').innerHTML = statusBadge(art.status);
+    document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+    document.getElementById('page-article-detail').classList.remove('hidden');
+  } catch (e) { console.error('Failed to load article:', e); }
+}
+
+async function updateArticleStatus(id, status) {
+  try {
+    await api('/api/articles/' + id, { method: 'PATCH', body: JSON.stringify({ status }) });
+    viewArticle(id);
+  } catch (e) { alert('Failed to update: ' + e.message); }
+}
+
+async function showGenerateArticleModal() {
+  try {
+    const data = await api('/api/documents?limit=100');
+    const container = document.getElementById('gen-article-docs');
+    container.innerHTML = data.documents.map(d =>
+      `<label style="display:block;padding:6px 0;cursor:pointer;font-size:14px;"><input type="checkbox" value="${d.id}" style="margin-right:8px;">${escapeHtml(d.title)}</label>`
+    ).join('');
+    document.getElementById('gen-article-modal').classList.remove('hidden');
+  } catch (e) { alert('Failed to load documents: ' + e.message); }
+}
+
+async function generateArticle() {
+  const checkboxes = document.querySelectorAll('#gen-article-docs input:checked');
+  const docIds = Array.from(checkboxes).map(c => c.value);
+  if (docIds.length === 0) { alert('Select at least one document'); return; }
+  try {
+    await api('/api/articles/generate', { method: 'POST', body: JSON.stringify({ doc_ids: docIds }) });
+    closeModal('gen-article-modal');
+    loadTraining();
+  } catch (e) { alert('Generation failed: ' + e.message); }
+}
+
+async function genQuizFromArticle(articleId) {
+  try {
+    await api('/api/quizzes/generate', { method: 'POST', body: JSON.stringify({ article_id: articleId }) });
+    navigate('training');
+  } catch (e) { alert('Quiz generation failed: ' + e.message); }
+}
+
+async function takeQuiz(quizId) {
+  try {
+    const quiz = await api('/api/quizzes/' + quizId);
+    const questions = JSON.parse(quiz.questions_json);
+    quizState = { total: questions.length, correct: 0, answered: 0 };
+    document.getElementById('quiz-detail-title').textContent = quiz.title;
+    document.getElementById('quiz-score').classList.add('hidden');
+    const container = document.getElementById('quiz-questions-container');
+    container.innerHTML = questions.map((q, qi) => {
+      const optionsHtml = q.options.map((o, oi) =>
+        `<button class="quiz-option" data-qi="${qi}" data-oi="${oi}" data-correct="${q.correct_index}" onclick="selectAnswer(this, ${qi}, ${oi}, ${q.correct_index})">${escapeHtml(o)}</button>`
+      ).join('');
+      return `<div class="quiz-question panel"><div class="panel-body">
+        <h4>Q${qi + 1}. ${escapeHtml(q.question)}</h4>
+        ${optionsHtml}
+        <div class="quiz-explanation" id="explanation-${qi}">${escapeHtml(q.explanation)}</div>
+      </div></div>`;
+    }).join('');
+    document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+    document.getElementById('page-quiz-detail').classList.remove('hidden');
+  } catch (e) { console.error('Failed to load quiz:', e); }
+}
+
+function selectAnswer(btn, qi, oi, correctIdx) {
+  // Disable all options for this question
+  document.querySelectorAll(`[data-qi="${qi}"]`).forEach(b => {
+    b.classList.add('disabled');
+    if (parseInt(b.dataset.oi) === correctIdx) b.classList.add('correct');
+  });
+  if (oi !== correctIdx) btn.classList.add('wrong');
+  else quizState.correct++;
+  quizState.answered++;
+  document.getElementById('explanation-' + qi).classList.add('show');
+  // Check if quiz is complete
+  if (quizState.answered === quizState.total) {
+    const scoreDiv = document.getElementById('quiz-score');
+    scoreDiv.classList.remove('hidden');
+    document.getElementById('quiz-score-text').textContent = `Score: ${quizState.correct} / ${quizState.total} (${Math.round(quizState.correct/quizState.total*100)}%)`;
+  }
+}
+
+// ---- Analytics ----
+async function loadAnalytics() {
+  try {
+    const [gaps, usage] = await Promise.all([api('/api/analytics/gaps'), api('/api/analytics/usage?days=7')]);
+    const gapsBody = document.getElementById('gaps-list');
+    if (gaps.length === 0) {
+      gapsBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No knowledge gaps detected</td></tr>';
+    } else {
+      gapsBody.innerHTML = gaps.map(g => `
+        <tr>
+          <td style="color:var(--text-primary);font-weight:500;">${escapeHtml(g.topic)}</td>
+          <td>${g.frequency}</td>
+          <td>${statusBadge(g.status)}</td>
+          <td>${formatDate(g.last_asked)}</td>
+          <td>
+            <button class="btn btn-green btn-sm" onclick="updateGap('${g.id}','addressed')">Addressed</button>
+            <button class="btn btn-sm" onclick="updateGap('${g.id}','dismissed')" style="margin-left:4px;">Dismiss</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+    renderChart('analytics-chart', usage.queries_per_day);
+  } catch (e) { console.error('Failed to load analytics:', e); }
+}
+
+async function updateGap(id, status) {
+  try {
+    await api('/api/analytics/gaps/' + id + '?status=' + status, { method: 'PATCH' });
+    loadAnalytics();
+  } catch (e) { alert('Failed to update: ' + e.message); }
+}
+
+// ---- Init ----
+document.addEventListener('DOMContentLoaded', () => { loadOverview(); });
+</script>
+</body>
+</html>
