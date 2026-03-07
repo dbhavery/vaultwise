@@ -1,11 +1,14 @@
 """Vector search using TF-IDF embeddings and cosine similarity."""
 
 import json
+import logging
 import math
 import re
 from collections import Counter
 from datetime import datetime, timezone
 from uuid import uuid4
+
+logger = logging.getLogger("vaultwise.search")
 
 import numpy as np
 
@@ -212,6 +215,7 @@ def _log_usage(action: str, query: str | None = None, response_time_ms: int | No
         conn.commit()
     except Exception:
         # Usage logging should not break the main flow
+        logger.debug("Failed to log usage event (action=%s, query=%s)", action, query, exc_info=True)
         conn.rollback()
     finally:
         conn.close()

@@ -1,9 +1,12 @@
 """Question-answering module: retrieve context, generate answers, track gaps."""
 
 import json
+import logging
 import time
 from datetime import datetime, timezone
 from uuid import uuid4
+
+logger = logging.getLogger("vaultwise.qa")
 
 import httpx
 
@@ -161,6 +164,7 @@ def _detect_knowledge_gap(query: str, confidence: float) -> None:
             )
         conn.commit()
     except Exception:
+        logger.warning("Failed to record knowledge gap for topic=%r", topic, exc_info=True)
         conn.rollback()
     finally:
         conn.close()
