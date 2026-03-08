@@ -1,38 +1,18 @@
 # Vaultwise
-[![CI](https://github.com/dbhavery/vaultwise/actions/workflows/ci.yml/badge.svg)](https://github.com/dbhavery/vaultwise/actions/workflows/ci.yml)
 
-![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white)
-![License MIT](https://img.shields.io/badge/license-MIT-green)
-![Tests Passing](https://img.shields.io/badge/tests-51%20passing-brightgreen)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)
+Knowledge management platform that ingests documents, searches them with a TF-IDF engine built from scratch using only NumPy, and generates training materials and quizzes -- turning scattered documentation into searchable, testable knowledge.
 
-A RAG-powered knowledge management platform that ingests organizational documents, enables semantic search through a **from-scratch TF-IDF implementation**, provides AI-driven Q&A with source citations, automatically generates training materials and quizzes, and surfaces knowledge gaps where documentation is lacking. Built for teams that need to turn scattered documents into searchable, actionable knowledge.
+## Why I Built This
 
----
+Organizations accumulate documentation across wikis, drives, and repos, but nobody can find anything when they need it. Search is either keyword-exact (useless) or requires deploying heavyweight infrastructure (Elasticsearch, vector databases). Vaultwise sits in the middle: a from-scratch TF-IDF implementation that delivers relevance-ranked results with zero ML dependencies, plus an AI layer that generates training content from the knowledge base so teams can actually learn from their own docs.
 
-## Features
+## What It Does
 
-- **Document Ingestion** -- Upload text, Markdown, or Python files. Documents are automatically chunked with configurable overlap for optimal retrieval.
-- **Semantic Search** -- From-scratch TF-IDF vectorization with cosine similarity ranking. No third-party search libraries; the entire pipeline is implemented with NumPy.
-- **AI-Powered Q&A** -- Retrieval-augmented generation using Ollama (local LLM). Questions are answered with source citations and confidence scores.
-- **Training Material Generation** -- Automatically synthesize knowledge articles from multiple source documents, then generate multiple-choice quizzes from those articles.
-- **Knowledge Gap Detection** -- Low-confidence answers are tracked as knowledge gaps, surfacing topics where documentation is missing or insufficient.
-- **Analytics Dashboard** -- Usage statistics, confidence trends, and gap frequency analysis via a built-in REST API and static dashboard.
-- **Seed Data** -- Ships with realistic demo content (employee handbook, API docs, security policies) so the platform is usable out of the box.
-
-## How Search Works
-
-Vaultwise implements TF-IDF (Term Frequency-Inverse Document Frequency) **from scratch** using only NumPy -- no scikit-learn, no Elasticsearch, no vector database.
-
-The pipeline:
-
-1. **Tokenization** -- Text is lowercased, split into alphanumeric tokens, and filtered through a stop-word list for better discrimination.
-2. **Vocabulary Construction** -- Document frequency is counted across all chunks. The top 10,000 terms by document frequency form the vocabulary.
-3. **IDF Computation** -- Each term receives a smoothed IDF weight: `log((N + 1) / (df + 1)) + 1`, where `N` is the total chunk count and `df` is the document frequency.
-4. **TF-IDF Vectors** -- Each chunk is represented as a sparse vector where each dimension is `term_count * idf_weight`. Vectors are L2-normalized for cosine similarity.
-5. **Query Matching** -- The query is vectorized through the same pipeline, then scored against all chunk vectors via `np.dot()`. Results are ranked by cosine similarity.
-
-This approach demonstrates understanding of information retrieval fundamentals without leaning on opaque library calls.
+- **TF-IDF search engine from scratch** -- implemented using only NumPy with no scikit-learn, no Elasticsearch, no vector database. Full pipeline: tokenization, stop-word filtering, IDF weighting, L2-normalized vectors, cosine similarity ranking. Instant indexing, explainable relevance scores.
+- **Document ingestion with chunking** -- handles PDF, DOCX, and plain text with configurable chunk sizes and overlap for optimal retrieval granularity
+- **RAG-powered Q&A with citations** -- retrieves relevant chunks, generates answers grounded in source material via Ollama, and includes confidence scores and source references
+- **Training material generation** -- synthesizes structured learning modules from multiple source documents, converting documentation into scannable training content
+- **Quiz generation with difficulty scaling** -- creates multiple-choice assessments from source material with answer validation, supporting active recall over passive reading
 
 ## Architecture
 
@@ -40,12 +20,12 @@ This approach demonstrates understanding of information retrieval fundamentals w
 Client Request
       |
       v
- [FastAPI Server]  ──── /api/documents   ──> Ingest (chunk + embed)
-      |                  /api/search      ──> TF-IDF cosine similarity
-      |                  /api/ask         ──> RAG: retrieve + LLM generate
-      |                  /api/articles    ──> Training article generation
-      |                  /api/quizzes     ──> Quiz generation from articles
-      |                  /api/analytics   ──> Usage stats + knowledge gaps
+ [FastAPI Server]  ---- /api/documents   --> Ingest (chunk + index)
+      |                  /api/search      --> TF-IDF cosine similarity
+      |                  /api/ask         --> RAG: retrieve + LLM generate
+      |                  /api/articles    --> Training article generation
+      |                  /api/quizzes     --> Quiz generation from articles
+      |                  /api/analytics   --> Usage stats + knowledge gaps
       |
       v
  [SQLite + WAL]         [Ollama (local LLM)]
@@ -58,36 +38,41 @@ Client Request
   - usage_log
 ```
 
-## Tech Stack
+The search engine operates independently of any LLM. AI features (Q&A, training generation, quiz generation) are additive -- the platform is fully functional for document management and search without Ollama running.
 
-| Layer         | Technology                        |
-|---------------|-----------------------------------|
-| Framework     | FastAPI + Uvicorn                 |
-| Search Engine | TF-IDF + NumPy (from scratch)    |
-| LLM Backend   | Ollama (qwen3:8b, local)         |
-| Database      | SQLite with WAL mode              |
-| HTTP Client   | httpx (async-capable)             |
-| Validation    | Pydantic v2                       |
-| Testing       | pytest + pytest-asyncio           |
-| Language      | Python 3.10+                      |
+## Key Technical Decisions
+
+- **TF-IDF from scratch over scikit-learn/Whoosh** -- complete control over tokenization, stop-word filtering, and scoring. Every step is inspectable and debuggable. Also demonstrates understanding of information retrieval fundamentals without opaque library calls. Trade-off: no built-in optimizations like inverted index compression, but the 10,000-term vocabulary cap keeps memory bounded.
+- **Quiz generation over simple Q&A** -- active recall (answering questions) produces stronger retention than passive reading. Generating assessments from source material closes the loop between "we documented it" and "the team actually knows it." Trade-off: quiz quality depends on prompt engineering to avoid trivial or ambiguous questions.
+- **Flat categories over hierarchical taxonomy** -- simpler mental model for users, avoids the over-classification problem where documents end up in deeply nested categories nobody navigates. Trade-off: less granularity for large knowledge bases, but tagging handles that need without imposing structure.
+- **Chunk overlap for retrieval** -- overlapping chunks prevent relevant content from being split across chunk boundaries. Trade-off: slightly more storage and index size, but retrieval quality improves significantly on multi-paragraph answers.
+
+## Results & Metrics
+
+- 20 API endpoints across documents, search, Q&A, training, quizzes, and analytics
+- 7 database tables with WAL mode for concurrent read access
+- 51 tests covering ingestion, TF-IDF indexing, search ranking, Q&A pipeline, training generation, and analytics
+- TF-IDF vocabulary capped at 10,000 terms with smoothed IDF weighting
+- Ships with realistic seed data (employee handbook, API docs, security policies) for immediate usability
+
+## Live Demo
+
+[HuggingFace Space](https://huggingface.co/spaces/dbhavery/vaultwise-knowledge)
 
 ## Quick Start
 
 ```bash
-# Clone the repository
 git clone https://github.com/dbhavery/vaultwise.git
 cd vaultwise
-
-# Install with dev dependencies
 pip install -e ".[dev]"
 
 # Start the server (seeds demo data on first run)
 python -m vaultwise.main
 ```
 
-The server starts at `http://localhost:8090`. The dashboard is served at `http://localhost:8090/dashboard/`.
+Server starts at `http://localhost:8090`. Dashboard at `/dashboard/`.
 
-**Optional:** For AI-powered Q&A and training generation, install and run [Ollama](https://ollama.com) with a model:
+For AI-powered Q&A and training generation, install [Ollama](https://ollama.com) and pull a model:
 
 ```bash
 ollama pull qwen3:8b
@@ -95,99 +80,16 @@ ollama pull qwen3:8b
 
 Without Ollama, the platform falls back to extractive summaries from retrieved chunks.
 
-## API Endpoints
+## Lessons Learned
 
-### Health
+- **Tokenization matters more than the algorithm.** Stemming, stop-word removal, and n-gram handling have bigger impact on search quality than TF-IDF formula variants. Spent more time tuning the tokenizer than the scoring math.
+- **Training content generation needs strong structural constraints.** Without explicit format requirements in the prompt, LLMs produce wall-of-text content instead of scannable learning modules. Had to specify section headers, bullet limits, and summary requirements to get usable output.
+- **Knowledge gaps are a feature, not a failure.** Low-confidence answers reveal where documentation is missing. Tracking these systematically turns a search miss into an actionable improvement signal for the documentation team.
 
-| Method | Endpoint   | Description                       |
-|--------|------------|-----------------------------------|
-| GET    | `/health`  | Status check with document counts |
+## Tests
 
-### Documents
-
-| Method | Endpoint                  | Description                          |
-|--------|---------------------------|--------------------------------------|
-| GET    | `/api/documents`          | List documents (paginated)           |
-| POST   | `/api/documents`          | Upload via multipart form            |
-| POST   | `/api/documents/json`     | Upload via JSON body                 |
-| GET    | `/api/documents/{doc_id}` | Get document with chunks             |
-| DELETE | `/api/documents/{doc_id}` | Delete document and its chunks       |
-
-### Search
-
-| Method | Endpoint       | Description                              |
-|--------|----------------|------------------------------------------|
-| POST   | `/api/search`  | Semantic search over document chunks     |
-
-### Q&A
-
-| Method | Endpoint          | Description                                |
-|--------|-------------------|--------------------------------------------|
-| POST   | `/api/ask`        | Ask a question, get answer with sources    |
-| GET    | `/api/questions`  | List recent questions (paginated)          |
-
-### Training Materials
-
-| Method | Endpoint                      | Description                          |
-|--------|-------------------------------|--------------------------------------|
-| GET    | `/api/articles`               | List articles                        |
-| POST   | `/api/articles/generate`      | Generate article from documents      |
-| GET    | `/api/articles/{article_id}`  | Get article by ID                    |
-| PATCH  | `/api/articles/{article_id}`  | Update article status/content        |
-| GET    | `/api/quizzes`                | List quizzes                         |
-| POST   | `/api/quizzes/generate`       | Generate quiz from article           |
-| GET    | `/api/quizzes/{quiz_id}`      | Get quiz by ID                       |
-
-### Analytics
-
-| Method | Endpoint                       | Description                        |
-|--------|--------------------------------|------------------------------------|
-| GET    | `/api/analytics/overview`      | Dashboard statistics               |
-| GET    | `/api/analytics/gaps`          | Knowledge gaps by frequency        |
-| PATCH  | `/api/analytics/gaps/{gap_id}` | Update gap status                  |
-| GET    | `/api/analytics/usage`         | Usage stats over N days            |
-
-## Testing
+51 tests across 5 modules. All tests use isolated temporary databases via fixtures -- no test pollution, no cleanup required.
 
 ```bash
-# Run the full suite
 python -m pytest tests/ -v
-
-# Run a specific module
-python -m pytest tests/test_search.py -v
 ```
-
-All 51 tests use isolated temporary databases via the `_use_temp_db` fixture -- no test pollution, no cleanup required.
-
-## Project Structure
-
-```
-vaultwise/
-├── vaultwise/
-│   ├── __init__.py         # Package version
-│   ├── main.py             # FastAPI app, routes, entry point
-│   ├── models.py           # Pydantic request/response schemas
-│   ├── database.py         # SQLite connection, schema, migrations
-│   ├── ingest.py           # Document upload, chunking, embedding
-│   ├── search.py           # TF-IDF index, cosine similarity search
-│   ├── qa.py               # RAG Q&A, confidence scoring, gap detection
-│   ├── training.py         # Article and quiz generation
-│   ├── analytics.py        # Usage stats, knowledge gap tracking
-│   └── seed.py             # Demo data seeder
-├── tests/
-│   ├── conftest.py         # Shared fixtures (temp DB, test clients)
-│   ├── test_ingest.py      # Ingestion and chunking tests
-│   ├── test_search.py      # TF-IDF index and search tests
-│   ├── test_qa.py          # Q&A pipeline tests
-│   ├── test_training.py    # Article/quiz generation tests
-│   └── test_analytics.py   # Analytics and gap tracking tests
-├── dashboard/
-│   └── index.html          # Static analytics dashboard
-├── pyproject.toml          # Project metadata and dependencies
-├── LICENSE                 # MIT License
-└── README.md
-```
-
-## License
-
-[MIT](LICENSE) -- Copyright 2026 Don Havery
