@@ -1,4 +1,5 @@
 # Vaultwise
+[![CI](https://github.com/dbhavery/vaultwise/actions/workflows/ci.yml/badge.svg)](https://github.com/dbhavery/vaultwise/actions/workflows/ci.yml)
 
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white)
 ![License MIT](https://img.shields.io/badge/license-MIT-green)
