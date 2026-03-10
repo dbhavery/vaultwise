@@ -1,18 +1,15 @@
 """Tests for the document ingestion module."""
 
-import json
-
-from vaultwise.database import get_connection, init_db
-from vaultwise.ingest import (
-    _chunk_text,
-    _count_words,
-    _detect_doc_type,
+from src.database import init_db
+from src.services.ingestion import (
+    chunk_text,
+    count_words,
+    detect_doc_type,
     delete_document,
     get_document,
     ingest_document,
     list_documents,
 )
-from vaultwise.search import build_index
 
 
 class TestChunking:
@@ -21,7 +18,7 @@ class TestChunking:
     def test_short_text_single_chunk(self):
         """Short text should produce a single chunk."""
         text = "This is a short document with only a few words."
-        chunks = _chunk_text(text, chunk_size=500)
+        chunks = chunk_text(text, chunk_size=500)
         assert len(chunks) == 1
         assert chunks[0] == text.strip()
 
@@ -29,7 +26,7 @@ class TestChunking:
         """Long text should be split into multiple chunks."""
         words = ["word"] * 1200
         text = " ".join(words)
-        chunks = _chunk_text(text, chunk_size=500, overlap=50)
+        chunks = chunk_text(text, chunk_size=500, overlap=50)
         assert len(chunks) >= 2
         # Each chunk should be roughly chunk_size words
         for chunk in chunks[:-1]:
@@ -39,7 +36,7 @@ class TestChunking:
         """Chunks should overlap by the specified number of words."""
         words = [f"w{i}" for i in range(100)]
         text = " ".join(words)
-        chunks = _chunk_text(text, chunk_size=40, overlap=10)
+        chunks = chunk_text(text, chunk_size=40, overlap=10)
         assert len(chunks) >= 2
         # Check that overlap is present
         chunk0_words = set(chunks[0].split()[-10:])
@@ -48,34 +45,34 @@ class TestChunking:
 
     def test_empty_text_no_chunks(self):
         """Empty text should produce no chunks."""
-        assert _chunk_text("") == []
-        assert _chunk_text("   ") == []
+        assert chunk_text("") == []
+        assert chunk_text("   ") == []
 
 
 class TestWordCount:
     """Tests for word counting."""
 
     def test_word_count(self):
-        assert _count_words("one two three") == 3
+        assert count_words("one two three") == 3
 
     def test_word_count_empty(self):
-        assert _count_words("") == 0
+        assert count_words("") == 0
 
 
 class TestDocTypeDetection:
     """Tests for document type detection."""
 
     def test_markdown_extension(self):
-        assert _detect_doc_type("readme.md", "anything") == "markdown"
+        assert detect_doc_type("readme.md", "anything") == "markdown"
 
     def test_python_extension(self):
-        assert _detect_doc_type("main.py", "anything") == "python"
+        assert detect_doc_type("main.py", "anything") == "python"
 
     def test_markdown_content(self):
-        assert _detect_doc_type("notes", "# Heading\nsome content") == "markdown"
+        assert detect_doc_type("notes", "# Heading\nsome content") == "markdown"
 
     def test_default_text(self):
-        assert _detect_doc_type("notes", "just plain text here") == "text"
+        assert detect_doc_type("notes", "just plain text here") == "text"
 
 
 class TestDocumentIngest:
